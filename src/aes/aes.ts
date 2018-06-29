@@ -2,31 +2,62 @@ import { AES_asm, AES_mode } from './aes.asm';
 import { _heap_init, _heap_write, is_bytes } from '../other/utils';
 import { IllegalArgumentError, SecurityError } from '../other/errors';
 
+const heap_pool: Uint8Array[] = [];
+const asm_pool: AES_asm[] = [];
+
 export class AES {
-  public readonly heap: Uint8Array;
-  public readonly asm: AES_asm;
+  public heap?: Uint8Array;
+  public asm?: AES_asm;
   private readonly mode: string;
   public padding: boolean; // TODO: This should be `private readonly`, hacking for AES-CFB?!
   public pos: number = 0;
   public len: number = 0;
 
+  private key: Uint8Array;
+  private iv: Uint8Array | undefined;
+
   constructor(key: Uint8Array, iv: Uint8Array | undefined, padding = true, mode: AES_mode, heap?: Uint8Array, asm?: AES_asm) {
     this.mode = mode;
-
-    // The AES "worker"
-    this.heap = heap ? heap : _heap_init().subarray(AES_asm.HEAP_DATA);
-    this.asm = asm ? asm : new AES_asm(null, this.heap.buffer);
 
     // The AES object state
     this.pos = 0;
     this.len = 0;
+
+    this.key = key;
+    this.iv = iv;
+    this.padding = padding;
+
+    // The AES "worker"
+    this.acquire_asm(heap, asm);
+  }
+
+  acquire_asm(heap?: Uint8Array, asm?: AES_asm): { heap: Uint8Array, asm: AES_asm } {
+    if (this.heap === undefined || this.asm === undefined) {
+      this.heap = heap || heap_pool.pop() || _heap_init().subarray(AES_asm.HEAP_DATA);
+      this.asm = asm || asm_pool.pop() || new AES_asm(null, this.heap.buffer);
+      this.reset(this.key, this.iv);
+    }
+    return { heap: this.heap, asm: this.asm };
+  }
+
+  release_asm() {
+    if (this.heap !== undefined && this.asm !== undefined) {
+      heap_pool.push(this.heap);
+      asm_pool.push(this.asm);
+    }
+    this.heap = undefined;
+    this.asm = undefined;
+  }
+
+  protected reset(key: Uint8Array, iv: Uint8Array | undefined) {
+    const { asm } = this.acquire_asm();
 
     // Key
     const keylen = key.length;
     if (keylen !== 16 && keylen !== 24 && keylen !== 32) throw new IllegalArgumentError('illegal key size');
 
     const keyview = new DataView(key.buffer, key.byteOffset, key.byteLength);
-    this.asm.set_key(
+    asm.set_key(
       keylen >> 2,
       keyview.getUint32(0),
       keyview.getUint32(4),
@@ -44,19 +75,16 @@ export class AES {
 
       let ivview = new DataView(iv.buffer, iv.byteOffset, iv.byteLength);
 
-      this.asm.set_iv(ivview.getUint32(0), ivview.getUint32(4), ivview.getUint32(8), ivview.getUint32(12));
+      asm.set_iv(ivview.getUint32(0), ivview.getUint32(4), ivview.getUint32(8), ivview.getUint32(12));
     } else {
-      this.asm.set_iv(0, 0, 0, 0);
+      asm.set_iv(0, 0, 0, 0);
     }
-
-    this.padding = padding;
   }
 
   AES_Encrypt_process(data: Uint8Array): Uint8Array {
     if (!is_bytes(data)) throw new TypeError("data isn't of expected type");
 
-    let asm = this.asm;
-    let heap = this.heap;
+    let { heap, asm } = this.acquire_asm();
     let amode = AES_asm.ENC[this.mode];
     let hpos = AES_asm.HEAP_DATA;
     let pos = this.pos;
@@ -96,8 +124,7 @@ export class AES {
   }
 
   AES_Encrypt_finish(): Uint8Array {
-    let asm = this.asm;
-    let heap = this.heap;
+    let { heap, asm } = this.acquire_asm();
     let amode = AES_asm.ENC[this.mode];
     let hpos = AES_asm.HEAP_DATA;
     let pos = this.pos;
@@ -128,14 +155,15 @@ export class AES {
     this.pos = 0;
     this.len = 0;
 
+    this.release_asm();
+
     return result;
   }
 
   AES_Decrypt_process(data: Uint8Array): Uint8Array {
     if (!is_bytes(data)) throw new TypeError("data isn't of expected type");
 
-    let asm = this.asm;
-    let heap = this.heap;
+    let { heap, asm } = this.acquire_asm();
     let amode = AES_asm.DEC[this.mode];
     let hpos = AES_asm.HEAP_DATA;
     let pos = this.pos;
@@ -181,8 +209,7 @@ export class AES {
   }
 
   AES_Decrypt_finish(): Uint8Array {
-    let asm = this.asm;
-    let heap = this.heap;
+    let { heap, asm } = this.acquire_asm();
     let amode = AES_asm.DEC[this.mode];
     let hpos = AES_asm.HEAP_DATA;
     let pos = this.pos;
@@ -220,6 +247,8 @@ export class AES {
 
     this.pos = 0;
     this.len = 0;
+
+    this.release_asm();
 
     return result;
   }

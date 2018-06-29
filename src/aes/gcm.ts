@@ -41,8 +41,10 @@ export class AES_GCM {
   ) {
     this.aes = aes ? aes : new AES(key, undefined, false, 'CTR');
 
+    let { asm, heap } = this.aes.acquire_asm();
+
     // Init GCM
-    this.aes.asm.gcm_init();
+    asm.gcm_init();
 
     // Tag size
     if (this.tagSize < 4 || this.tagSize > 16) throw new IllegalArgumentError('illegal tagSize value');
@@ -53,28 +55,28 @@ export class AES_GCM {
     if (noncelen !== 12) {
       this._gcm_mac_process(nonce);
 
-      this.aes.heap[0] = 0;
-      this.aes.heap[1] = 0;
-      this.aes.heap[2] = 0;
-      this.aes.heap[3] = 0;
-      this.aes.heap[4] = 0;
-      this.aes.heap[5] = 0;
-      this.aes.heap[6] = 0;
-      this.aes.heap[7] = 0;
-      this.aes.heap[8] = 0;
-      this.aes.heap[9] = 0;
-      this.aes.heap[10] = 0;
-      this.aes.heap[11] = noncelen >>> 29;
-      this.aes.heap[12] = (noncelen >>> 21) & 255;
-      this.aes.heap[13] = (noncelen >>> 13) & 255;
-      this.aes.heap[14] = (noncelen >>> 5) & 255;
-      this.aes.heap[15] = (noncelen << 3) & 255;
-      this.aes.asm.mac(AES_asm.MAC.GCM, AES_asm.HEAP_DATA, 16);
+      heap[0] = 0;
+      heap[1] = 0;
+      heap[2] = 0;
+      heap[3] = 0;
+      heap[4] = 0;
+      heap[5] = 0;
+      heap[6] = 0;
+      heap[7] = 0;
+      heap[8] = 0;
+      heap[9] = 0;
+      heap[10] = 0;
+      heap[11] = noncelen >>> 29;
+      heap[12] = (noncelen >>> 21) & 255;
+      heap[13] = (noncelen >>> 13) & 255;
+      heap[14] = (noncelen >>> 5) & 255;
+      heap[15] = (noncelen << 3) & 255;
+      asm.mac(AES_asm.MAC.GCM, AES_asm.HEAP_DATA, 16);
 
-      this.aes.asm.get_iv(AES_asm.HEAP_DATA);
-      this.aes.asm.set_iv(0, 0, 0, 0);
+      asm.get_iv(AES_asm.HEAP_DATA);
+      asm.set_iv(0, 0, 0, 0);
 
-      noncebuf.set(this.aes.heap.subarray(0, 16));
+      noncebuf.set(heap.subarray(0, 16));
     } else {
       noncebuf.set(nonce);
       noncebuf[15] = 1;
@@ -83,8 +85,8 @@ export class AES_GCM {
     const nonceview = new DataView(noncebuf.buffer);
     this.gamma0 = nonceview.getUint32(12);
 
-    this.aes.asm.set_nonce(nonceview.getUint32(0), nonceview.getUint32(4), nonceview.getUint32(8), 0);
-    this.aes.asm.set_mask(0, 0, 0, 0xffffffff);
+    asm.set_nonce(nonceview.getUint32(0), nonceview.getUint32(4), nonceview.getUint32(8), 0);
+    asm.set_mask(0, 0, 0, 0xffffffff);
 
     // Associated data
     if (adata !== undefined) {
@@ -103,7 +105,7 @@ export class AES_GCM {
     // Counter
     if (this.counter < 1 || this.counter > 0xffffffff)
       throw new RangeError('counter must be a positive 32-bit integer');
-    this.aes.asm.set_counter(0, 0, 0, (this.gamma0 + this.counter) | 0);
+    asm.set_counter(0, 0, 0, (this.gamma0 + this.counter) | 0);
   }
 
   encrypt(data: Uint8Array) {
@@ -117,8 +119,7 @@ export class AES_GCM {
   AES_GCM_Encrypt_process(data: Uint8Array): Uint8Array {
     let dpos = 0;
     let dlen = data.length || 0;
-    let asm = this.aes.asm;
-    let heap = this.aes.heap;
+    let { asm, heap } = this.aes.acquire_asm();
     let counter = this.counter;
     let pos = this.aes.pos;
     let len = this.aes.len;
@@ -160,8 +161,7 @@ export class AES_GCM {
   }
 
   AES_GCM_Encrypt_finish(): Uint8Array {
-    let asm = this.aes.asm;
-    let heap = this.aes.heap;
+    let { asm, heap } = this.aes.acquire_asm();
     let counter = this.counter;
     let tagSize = this.tagSize;
     let adata = this.adata;
@@ -212,8 +212,7 @@ export class AES_GCM {
   AES_GCM_Decrypt_process(data: Uint8Array): Uint8Array {
     let dpos = 0;
     let dlen = data.length || 0;
-    let asm = this.aes.asm;
-    let heap = this.aes.heap;
+    let { asm, heap } = this.aes.acquire_asm();
     let counter = this.counter;
     let tagSize = this.tagSize;
     let pos = this.aes.pos;
@@ -256,8 +255,7 @@ export class AES_GCM {
   }
 
   AES_GCM_Decrypt_finish() {
-    let asm = this.aes.asm;
-    let heap = this.aes.heap;
+    let { asm, heap } = this.aes.acquire_asm();
     let tagSize = this.tagSize;
     let adata = this.adata;
     let counter = this.counter;
@@ -334,8 +332,7 @@ export class AES_GCM {
   }
 
   _gcm_mac_process(data: Uint8Array) {
-    const heap = this.aes.heap;
-    const asm = this.aes.asm;
+    let { asm, heap } = this.aes.acquire_asm();
     let dpos = 0;
     let dlen = data.length || 0;
     let wlen = 0;

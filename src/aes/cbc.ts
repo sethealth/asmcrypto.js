@@ -2,7 +2,7 @@ import { AES } from './aes';
 import { joinBytes } from '../other/utils';
 
 export class AES_CBC {
-  private aes: AES;
+  public aes: AES;
 
   static encrypt(data: Uint8Array, key: Uint8Array, padding: boolean = true, iv?: Uint8Array): Uint8Array {
     return new AES_CBC(key, iv, padding).encrypt(data);

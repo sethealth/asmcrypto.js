@@ -12,9 +12,10 @@ export function pbkdf2core(hmac: HmacSha1 | HmacSha256 | HmacSha512, salt: Uint8
     const l = (i < blocks ? 0 : length % hmac.HMAC_SIZE) || hmac.HMAC_SIZE;
 
     hmac.reset().process(salt);
-    hmac.hash.asm.pbkdf2_generate_block(hmac.hash.pos, hmac.hash.len, i, count, 0);
+    const { asm, heap } = hmac.hash.acquire_asm();
+    asm.pbkdf2_generate_block(hmac.hash.pos, hmac.hash.len, i, count, 0);
 
-    result.set(hmac.hash.heap.subarray(0, l), j);
+    result.set(heap.subarray(0, l), j);
   }
 
   return result;

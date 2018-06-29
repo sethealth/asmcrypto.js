@@ -35,14 +35,16 @@ export class AES_CTR {
   }
 
   private AES_CTR_set_options(nonce: Uint8Array, counter?: number, size?: number): void {
+    let { asm } = this.aes.acquire_asm();
+
     if (size !== undefined) {
       if (size < 8 || size > 48) throw new IllegalArgumentError('illegal counter size');
 
       let mask = Math.pow(2, size) - 1;
-      this.aes.asm.set_mask(0, 0, (mask / 0x100000000) | 0, mask | 0);
+      asm.set_mask(0, 0, (mask / 0x100000000) | 0, mask | 0);
     } else {
       size = 48;
-      this.aes.asm.set_mask(0, 0, 0xffff, 0xffffffff);
+      asm.set_mask(0, 0, 0xffff, 0xffffffff);
     }
 
     if (nonce !== undefined) {
@@ -52,7 +54,7 @@ export class AES_CTR {
       let view = new DataView(new ArrayBuffer(16));
       new Uint8Array(view.buffer).set(nonce);
 
-      this.aes.asm.set_nonce(view.getUint32(0), view.getUint32(4), view.getUint32(8), view.getUint32(12));
+      asm.set_nonce(view.getUint32(0), view.getUint32(4), view.getUint32(8), view.getUint32(12));
     } else {
       throw new Error('nonce is required');
     }
@@ -60,7 +62,7 @@ export class AES_CTR {
     if (counter !== undefined) {
       if (counter < 0 || counter >= Math.pow(2, size)) throw new IllegalArgumentError('illegal counter value');
 
-      this.aes.asm.set_counter(0, 0, (counter / 0x100000000) | 0, counter | 0);
+      asm.set_counter(0, 0, (counter / 0x100000000) | 0, counter | 0);
     }
   }
 }

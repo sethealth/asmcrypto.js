@@ -37,4 +37,8 @@ export class Sha256 extends Hash<sha256result> {
     this.heap = undefined;
     this.asm = undefined;
   }
+
+  static bytes(data: Uint8Array): Uint8Array | null {
+    return new Sha256().process(data).finish().result;
+  }
 }

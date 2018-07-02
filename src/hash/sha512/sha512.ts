@@ -37,4 +37,8 @@ export class Sha512 extends Hash<sha512result> {
     this.heap = undefined;
     this.asm = undefined;
   }
+
+  static bytes(data: Uint8Array): Uint8Array | null {
+    return new Sha512().process(data).finish().result;
+  }
 }

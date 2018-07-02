@@ -41,4 +41,8 @@ export class Sha1 extends Hash<sha1result> {
     this.heap = undefined;
     this.asm = undefined;
   }
+
+  static bytes(data: Uint8Array): Uint8Array | null {
+    return new Sha1().process(data).finish().result;
+  }
 }

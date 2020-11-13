@@ -21,11 +21,17 @@ import * as rollup from 'rollup';
   const program_es8 = ts.createProgram(['src/entry-export_all.ts'], options_es8.options);
   const result_es5 = program_es5.emit();
   if (result_es5.emitSkipped) {
-    throw new Error(result_es5.diagnostics[0].messageText);
+    const diagnostic = result_es5.diagnostics[0];
+    const error = new Error(diagnostic.messageText);
+    error.stack = error.stack.replace(/at .*/, 'at ' + diagnostic.file.fileName + ':' + diagnostic.file.lineMap.findIndex(value => value > diagnostic.start));
+    throw error;
   }
   const result_es8 = program_es8.emit();
   if (result_es8.emitSkipped) {
-    throw new Error(result_es8.diagnostics[0].messageText);
+    const diagnostic = result_es8.diagnostics[0];
+    const error = new Error(diagnostic.messageText);
+    error.stack = error.stack.replace(/at .*/, 'at ' + diagnostic.file.fileName + ':' + diagnostic.file.lineMap.findIndex(value => value > diagnostic.start));
+    throw error;
   }
 
   // Copy non-ts resources
@@ -95,4 +101,4 @@ import * as rollup from 'rollup';
   });
 
   console.log('Build complete');
-})();
+})().catch(console.error);

@@ -115,11 +115,7 @@ export class RSA_OAEP {
 
       const submask = mask.subarray(i * hash_size);
 
-      let chunk = this.hash
-        .reset()
-        .process(seed)
-        .process(counter)
-        .finish().result as Uint8Array;
+      let chunk = this.hash.reset().process(seed).process(counter).finish().result as Uint8Array;
       if (chunk.length > submask.length) chunk = chunk.subarray(0, submask.length);
 
       submask.set(chunk);
@@ -179,10 +175,7 @@ export class RSA_PSS {
     d_block[ps_length] = 1;
     d_salt.set(m_salt);
 
-    h_block.set(this.hash
-      .reset()
-      .process(m_block)
-      .finish().result as Uint8Array);
+    h_block.set(this.hash.reset().process(m_block).finish().result as Uint8Array);
 
     const d_block_mask = this.RSA_MGF1_generate(h_block, d_block.length);
     for (let i = 0; i < d_block.length; i++) d_block[i] ^= d_block_mask[i];
@@ -230,16 +223,10 @@ export class RSA_PSS {
     const m_hash = m_block.subarray(8, 8 + hash_size);
     const m_salt = m_block.subarray(8 + hash_size);
 
-    m_hash.set(this.hash
-      .reset()
-      .process(data)
-      .finish().result as Uint8Array);
+    m_hash.set(this.hash.reset().process(data).finish().result as Uint8Array);
     m_salt.set(d_salt);
 
-    const h_block_verify = this.hash
-      .reset()
-      .process(m_block)
-      .finish().result as Uint8Array;
+    const h_block_verify = this.hash.reset().process(m_block).finish().result as Uint8Array;
     for (let i = 0; i < hash_size; i++) {
       if (h_block[i] !== h_block_verify[i]) throw new SecurityError('bad signature');
     }
@@ -258,11 +245,7 @@ export class RSA_PSS {
 
       const submask = mask.subarray(i * hash_size);
 
-      let chunk = this.hash
-        .reset()
-        .process(seed)
-        .process(counter)
-        .finish().result as Uint8Array;
+      let chunk = this.hash.reset().process(seed).process(counter).finish().result as Uint8Array;
       if (chunk.length > submask.length) chunk = chunk.subarray(0, submask.length);
 
       submask.set(chunk);

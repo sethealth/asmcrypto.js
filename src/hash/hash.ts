@@ -13,7 +13,7 @@ export abstract class Hash<T extends sha1result | sha256result | sha512result> {
   public BLOCK_SIZE!: number;
   public HASH_SIZE!: number;
 
-  abstract acquire_asm(): { heap: Uint8Array, asm: T };
+  abstract acquire_asm(): { heap: Uint8Array; asm: T };
 
   abstract release_asm(): void;
 

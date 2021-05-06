@@ -81,11 +81,7 @@ export class RSA {
 
       const h = p.reduce(u.multiply(t));
 
-      result = h
-        .multiply(q)
-        .add(y)
-        .clamp(m.bitLength)
-        .toBytes();
+      result = h.multiply(q).add(y).clamp(m.bitLength).toBytes();
     } else {
       m = this.key[0];
       const d = this.key[2] as BigNumber;

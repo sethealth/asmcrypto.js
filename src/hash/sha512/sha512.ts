@@ -20,7 +20,7 @@ export class Sha512 extends Hash<sha512result> {
     this.acquire_asm();
   }
 
-  acquire_asm(): { heap: Uint8Array, asm: sha512result } {
+  acquire_asm(): { heap: Uint8Array; asm: sha512result } {
     if (this.heap === undefined || this.asm === undefined) {
       this.heap = heap_pool.pop() || _heap_init();
       this.asm = asm_pool.pop() || sha512_asm({ Uint8Array: Uint8Array }, null, this.heap.buffer);

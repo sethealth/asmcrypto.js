@@ -52,11 +52,7 @@ export abstract class Hmac<T extends Hash<sha1result> | Hash<sha256result> | Has
     for (let i = 0; i < opad.length; ++i) opad[i] ^= 0x5c;
 
     const verify = this.verify;
-    const result = this.hash
-      .reset()
-      .process(opad)
-      .process(inner_result)
-      .finish().result as Uint8Array;
+    const result = this.hash.reset().process(opad).process(inner_result).finish().result as Uint8Array;
 
     if (verify) {
       if (verify.length === result.length) {
@@ -86,10 +82,7 @@ export function _hmac_key(hash: Hash<sha1result | sha256result | sha512result>, 
   const key = new Uint8Array(hash.BLOCK_SIZE);
 
   if (password.length > hash.BLOCK_SIZE) {
-    key.set(hash
-      .reset()
-      .process(password)
-      .finish().result as Uint8Array);
+    key.set(hash.reset().process(password).finish().result as Uint8Array);
   } else {
     key.set(password);
   }

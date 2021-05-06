@@ -20,7 +20,7 @@ export class Sha256 extends Hash<sha256result> {
     this.acquire_asm();
   }
 
-  acquire_asm(): { heap: Uint8Array, asm: sha256result } {
+  acquire_asm(): { heap: Uint8Array; asm: sha256result } {
     if (this.heap === undefined || this.asm === undefined) {
       this.heap = heap_pool.pop() || _heap_init();
       this.asm = asm_pool.pop() || sha256_asm({ Uint8Array: Uint8Array }, null, this.heap.buffer);

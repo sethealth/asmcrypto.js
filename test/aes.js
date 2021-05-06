@@ -382,6 +382,94 @@ describe('AES', () => {
     });
   });
 
+  describe('GCM streaming', () => {
+    const getRandomBytes = (size) => {
+      const buffer = new Uint8Array(size);
+      for (let i = 0; i < size; i++) {
+        buffer[i] = Math.floor(Math.random()*256);
+      }
+      return buffer;
+    }
+    const concatBuffers = (arrays) => {
+      const totalLength = arrays.reduce(
+        (acc, value) => acc + value.byteLength,
+        0
+      );
+      const output = new Uint8Array(totalLength);
+      let offset = 0;
+      for (let array of arrays) {
+        output.set(array, offset);
+        offset += array.byteLength;
+      }
+      return output;
+    };
+    const compareBuffer = (a, b) => {
+      const cA = new Uint8Array(a.buffer, a.byteOffset, a.byteLength);
+      const cB = new Uint8Array(b.buffer, b.byteOffset, b.byteLength);
+      if (cA.length !== cB.length) {
+        console.error("Size mismatch", a.byteLength, b.byteLength);
+        return false;
+      }
+      for (let i = 0; i < cA.length; i++) {
+        if (cA[i] !== cB[i]) {
+          console.error(`Value mismatch at index ${i}: ${cA[i]} !== ${cB[i]}`);
+          return false;
+        }
+      }
+      return true;
+    };
+    const gcm_aes_vectors = [
+      [
+        // key
+        asmCrypto.hex_to_bytes('feffe9928665731c6d6a8f9467308308'),
+        // nonce
+        asmCrypto.hex_to_bytes('cafebabefacedbad'),
+        // adata
+        undefined,
+        // tagSize
+        16,
+        // input message
+        (function() {
+          const chunks = [];
+          for (let i = 0; i < 1024; i++) {
+            const size = Math.floor(Math.random() * 1024);
+            chunks.push(getRandomBytes(size));
+          }
+          return chunks;
+        })()
+      ],
+    ];
+
+    it("asmCrypto.AES_GCM.encrypt", function () {
+      for (let i = 0; i < gcm_aes_vectors.length; ++i) {
+        const key = gcm_aes_vectors[i][0];
+        const nonce = gcm_aes_vectors[i][1];
+        const adata = gcm_aes_vectors[i][2];
+        const tagsize = gcm_aes_vectors[i][3];
+        const chunks = gcm_aes_vectors[i][4]
+
+        const encrypt = new asmCrypto.AES_GCM(key, nonce, adata, tagsize);
+        const output = [];
+        for (let chunk of chunks) {
+          output.push(encrypt.AES_GCM_Encrypt_process(chunk));
+        }
+        output.push(encrypt.AES_GCM_Encrypt_finish());
+
+
+        const decrypt = new asmCrypto.AES_GCM(key, nonce, adata, tagsize);
+        const final = [];
+        for (let chunk of output) {
+          final.push(decrypt.AES_GCM_Decrypt_process(chunk));
+        }
+        final.push(decrypt.AES_GCM_Decrypt_finish());
+
+        const plainText = concatBuffers(chunks);
+        const decryptedContent = concatBuffers(final);
+        expect(compareBuffer(plainText, decryptedContent)).equal(true);
+      }
+    });
+  });
+
   describe('CFB', () => {
     const cfb_aes_vectors = [
       [   // key

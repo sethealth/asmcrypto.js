@@ -24,7 +24,7 @@ export class Sha1 extends Hash<sha1result> {
     this.acquire_asm();
   }
 
-  acquire_asm(): { heap: Uint8Array, asm: sha1result } {
+  acquire_asm(): { heap: Uint8Array; asm: sha1result } {
     if (this.heap === undefined || this.asm === undefined) {
       this.heap = heap_pool.pop() || _heap_init();
       this.asm = asm_pool.pop() || sha1_asm({ Uint8Array: Uint8Array }, null, this.heap.buffer);

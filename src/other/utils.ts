@@ -1,5 +1,7 @@
-const local_atob = typeof atob === 'undefined' ? (str: string) => require('buffer').Buffer.from(str, 'base64').toString('binary') : atob;
-const local_btoa = typeof btoa === 'undefined' ? (str: string) => require('buffer').Buffer.from(str, 'binary').toString('base64') : btoa;
+const local_atob =
+  typeof atob === 'undefined' ? (str: string) => require('buffer').Buffer.from(str, 'base64').toString('binary') : atob;
+const local_btoa =
+  typeof btoa === 'undefined' ? (str: string) => require('buffer').Buffer.from(str, 'binary').toString('base64') : btoa;
 
 export function string_to_bytes(str: string, utf8: boolean = false): Uint8Array {
   var len = str.length,

@@ -232,7 +232,7 @@ export class AES_GCM {
       dpos += wlen;
       dlen -= wlen;
 
-      wlen = asm.mac(AES_asm.MAC.GCM, AES_asm.HEAP_DATA + pos, wlen);
+      wlen = asm.mac(AES_asm.MAC.GCM, AES_asm.HEAP_DATA + pos, len);
       wlen = asm.cipher(AES_asm.DEC.CTR, AES_asm.HEAP_DATA + pos, wlen);
 
       if (wlen) result.set(heap.subarray(pos, pos + wlen), rpos);
@@ -244,14 +244,14 @@ export class AES_GCM {
     }
 
     if (dlen > 0) {
-      len += _heap_write(heap, 0, data, dpos, dlen);
+      len += _heap_write(heap, len, data, dpos, dlen);
     }
 
     this.counter = counter;
     this.aes.pos = pos;
     this.aes.len = len;
 
-    return result;
+    return result.subarray(0, rpos);
   }
 
   AES_GCM_Decrypt_finish() {

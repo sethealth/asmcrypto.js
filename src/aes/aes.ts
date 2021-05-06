@@ -16,7 +16,14 @@ export class AES {
   private key: Uint8Array;
   private iv: Uint8Array | undefined;
 
-  constructor(key: Uint8Array, iv: Uint8Array | undefined, padding = true, mode: AES_mode, heap?: Uint8Array, asm?: AES_asm) {
+  constructor(
+    key: Uint8Array,
+    iv: Uint8Array | undefined,
+    padding = true,
+    mode: AES_mode,
+    heap?: Uint8Array,
+    asm?: AES_asm,
+  ) {
     this.mode = mode;
 
     // The AES object state
@@ -31,7 +38,7 @@ export class AES {
     this.acquire_asm(heap, asm);
   }
 
-  acquire_asm(heap?: Uint8Array, asm?: AES_asm): { heap: Uint8Array, asm: AES_asm } {
+  acquire_asm(heap?: Uint8Array, asm?: AES_asm): { heap: Uint8Array; asm: AES_asm } {
     if (this.heap === undefined || this.asm === undefined) {
       this.heap = heap || heap_pool.pop() || _heap_init().subarray(AES_asm.HEAP_DATA);
       this.asm = asm || asm_pool.pop() || new AES_asm(null, this.heap.buffer);
